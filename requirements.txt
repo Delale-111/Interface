@@ -1,0 +1,8 @@
+streamlit 
+pandas 
+time
+smtplib
+string
+random
+json
+streamlit_lottie 
