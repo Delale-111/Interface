@@ -5,4 +5,3 @@ smtplib
 string
 random
 json
-streamlit_lottie 
