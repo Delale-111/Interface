@@ -1,7 +1,3 @@
-streamlit 
-pandas 
-time
-smtplib
-string
-random
-json
+streamlit==1.10.0
+pandas==1.4.2
+streamlit_lottie==1.0.0
