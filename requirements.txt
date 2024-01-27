@@ -2,3 +2,4 @@ streamlit
 pandas
 pandas
 streamlit_lottie
+openpyxl
