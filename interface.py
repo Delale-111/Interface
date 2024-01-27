@@ -1,27 +1,27 @@
 import streamlit as st
 import pandas as pd
-import time
 import smtplib
 import string
 import random
 import json
 from streamlit_lottie import st_lottie
 
-def load_data():
-    base_statuts = pd.read_csv('BASE_STATUTS.csv', delimiter=";")
-    return base_statuts
+def load_data_once():
+    if 'base_statuts' not in st.session_state:
+        st.session_state.base_statuts = pd.read_csv('BASE_STATUTS.csv', delimiter=";")
+    if 'data_identifiants' not in st.session_state:
+        st.session_state.data_identifiants = pd.read_excel('data_identifiants.xlsx')
 
 def update_status(id, new_status):
-    base_statuts = pd.read_csv('BASE_STATUTS.csv', delimiter=";")
-    base_statuts.loc[base_statuts['etalab'] == id, 'STATUT'] = new_status
-    base_statuts.to_csv('BASE_STATUTS.csv', index=False, sep=';')
+    st.session_state.base_statuts.loc[st.session_state.base_statuts['etalab'] == id, 'STATUT'] = new_status
+    st.session_state.base_statuts.to_csv('BASE_STATUTS.csv', index=False, sep=';')
 
 def authenticate_user(username, password):
-    data = pd.read_excel('data_identifiants.xlsx')
+    data = st.session_state.data_identifiants
     return any((data['IDENTIFIANT'] == username) & (data['MOT_DE_PASSE'] == password))
 
 def check_username_exists(username):
-    data = pd.read_csv('data_identifiants.csv', delimiter=";")
+    data = st.session_state.data_identifiants
     return username in data['IDENTIFIANT'].values
 
 def generate_random_password(length=12):
@@ -29,7 +29,7 @@ def generate_random_password(length=12):
     return ''.join(random.choice(characters) for i in range(length))
 
 def update_password(username, new_password):
-    data = pd.read_csv('data_identifiants.csv', delimiter=";")
+    data = st.session_state.data_identifiants
     data.loc[data['IDENTIFIANT'] == username, 'MOT_DE_PASSE'] = new_password
     data.to_csv('data_identifiants.csv', index=False, sep=';')
 
@@ -58,15 +58,22 @@ Subject: {subject}
         st.error(f"Erreur générale : {e}")
         return False
 
+def load_lottiefile():
+    if 'lottiefile' not in st.session_state:
+        with open("robo.json", "r") as file:
+            st.session_state.lottiefile = json.load(file)
+
 st.set_page_config(layout='wide')
 logo_url = "https://static.wixstatic.com/media/fec599_660c83d77fb24e00a5d45828056b063c~mv2.png"
 st.image(logo_url, width=200)
+
+load_data_once()
+load_lottiefile()
+
 col1, col2 = st.columns([3, 1])
 
 with col2:
-    with open("robo.json", "r") as file:
-        data_oracle = json.load(file)
-    st_lottie(data_oracle, height=400, key="oracle")
+    st_lottie(st.session_state.lottiefile, height=400, key="oracle")
 
 with col1:
     if 'auth_success' not in st.session_state:
@@ -98,7 +105,7 @@ with col1:
                 st.error('Identifiant non trouvé.')
     else:
         st.header(f'Bienvenue {st.session_state.username_input}', divider='rainbow')
-        data = load_data()
+        data = st.session_state.base_statuts
         if data is not None:
             selected_id = st.selectbox("Choisir l'établissement", data['etalab'])
             current_status = data[data['etalab'] == selected_id]['STATUT'].values[0]
@@ -106,9 +113,8 @@ with col1:
             new_status = st.selectbox("Changement de statut", ['OUVERT', 'FERME'])
             if st.button('Mettre à jour'):
                 update_status(selected_id, new_status)
-                time.sleep(1)
-                data = load_data()
-                current_status = data[data['etalab'] == selected_id]['STATUT'].values[0]
+                st.session_state.base_statuts = pd.read_csv('BASE_STATUTS.csv', delimiter=";")
+                current_status = st.session_state.base_statuts[st.session_state.base_statuts['etalab'] == selected_id]['STATUT'].values[0]
                 st.success(f"Statut actuel : {current_status}")
         if st.button('Se déconnecter'):
             st.session_state.auth_success = False
